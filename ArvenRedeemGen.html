@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="unsafe-url">
+<title>Arven Premium Redeem Generator</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111827;background:#f3f4f6}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.card{width:min(560px,100%);background:#fff;border:1px solid #e5e7eb;border-radius:22px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.12)}.logo{display:block;width:78px;height:78px;border-radius:50%;object-fit:cover;margin:0 auto 14px}.title{text-align:center;margin:0}.muted{text-align:center;color:#6b7280;font-size:.86rem;line-height:1.5}.section{margin-top:20px;padding-top:18px;border-top:1px solid #e5e7eb}.label{display:block;font-weight:800;font-size:.84rem;margin:0 0 7px}.input,.select{width:100%;padding:12px 13px;border:1px solid #d1d5db;border-radius:11px;background:#fff;color:#111827;font-size:.96rem;outline:none}.input:focus,.select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{width:100%;padding:12px;border:0;border-radius:11px;background:#2563eb;color:#fff;font-weight:850;cursor:pointer}.btn:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#fff;color:#111827;border:1px solid #d1d5db}.status{margin-top:12px;text-align:center;font-size:.84rem;color:#6b7280}.error{color:#b91c1c}.success{color:#047857}.result{margin-top:16px;padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#f9fafb;display:none}.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.2rem;font-weight:900;letter-spacing:.08em;word-break:break-all;margin:8px 0}.hidden{display:none!important}.small{font-size:.74rem;color:#6b7280;margin-top:6px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}.topbar button{border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:8px 11px;font-weight:750;cursor:pointer}
+@media(max-width:520px){.row{grid-template-columns:1fr}.card{padding:19px}}
+</style>
+</head>
+<body>
+<main class="card">
+<img class="logo" src="https://res.cloudinary.com/dgdaqwfib/image/upload/v1789358733/file_000000000214823095ab2b71e10e1990_cyerjd.png" alt="Arven">
+<h1 class="title">Premium Redeem Generator</h1>
+<p class="muted">Private Arven v27 tool. The backend is the final authority for generator access.</p>
+
+<section id="loginSection">
+<div class="section">
+<label class="label" for="email">Authorized account email</label>
+<input class="input" id="email" type="email" autocomplete="username" placeholder="Email">
+<label class="label" for="password" style="margin-top:12px">Password</label>
+<input class="input" id="password" type="password" autocomplete="current-password" placeholder="Password">
+<button class="btn" id="loginBtn" style="margin-top:12px">Sign in</button>
+<div class="status" id="loginStatus"></div>
+</div>
+</section>
+
+<section id="generatorSection" class="hidden">
+<div class="topbar"><strong id="accountLabel"></strong><button id="logoutBtn">Sign out</button></div>
+<div class="section">
+<label class="label" for="expiry">Redeem-code expiry</label>
+<input class="input" id="expiry" type="datetime-local">
+<div class="small">The expiry is interpreted using your device's local time and stored as an absolute timestamp.</div>
+
+<label class="label" for="duration" style="margin-top:14px">Premium duration</label>
+<div class="row"><input class="input" id="duration" type="number" min="1" step="1" value="30"><select class="select" id="unit"><option value="seconds">Seconds</option><option value="minutes">Minutes</option><option value="hours">Hours</option><option value="days" selected>Days</option><option value="weeks">Weeks</option><option value="months">Months</option><option value="years">Years</option></select></div>
+<button class="btn" id="generateBtn" style="margin-top:14px">Generate redeem code</button>
+<div class="status" id="generatorStatus"></div>
+<div class="result" id="result"><strong>Generated code</strong><div class="code" id="codeOutput"></div><div class="small" id="details"></div><button class="btn secondary" id="copyBtn" style="margin-top:12px">Copy code</button></div>
+</div>
+</section>
+</main>
+<script>
+(() => {
+'use strict';
+const BACKEND='https://arven-backend-m6ft.onrender.com';
+const firebaseConfig={apiKey:'AIzaSyAqzMX2aMJC9vPTKkGZhL5i3Bjemd0aa9E',authDomain:'arvenai.firebaseapp.com',projectId:'arvenai',storageBucket:'arvenai.firebasestorage.app',messagingSenderId:'839108518515',appId:'1:839108518515:web:1f7f061959569cbed94006'};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);const auth=firebase.auth();
+const $=id=>document.getElementById(id);const status=(el,msg,cls='')=>{el.textContent=msg;el.className='status '+cls};
+async function request(path,method='GET',body){const u=auth.currentUser;if(!u)throw new Error('Sign in first.');const t=await u.getIdToken();const o={method,credentials:'omit',cache:'no-store',headers:{Authorization:'Bearer '+t,'X-Arven-Client-Version':'27.0'}};if(body!==undefined){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}const r=await fetch(BACKEND+path,o);const d=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(d?.message||d?.error||`Request failed (HTTP ${r.status}).`),{status:r.status,code:d?.code});return d}
+function showGenerator(email){$('loginSection').classList.add('hidden');$('generatorSection').classList.remove('hidden');$('accountLabel').textContent=email||'Authorized account';status($('generatorStatus'),'');}
+function showLogin(){ $('loginSection').classList.remove('hidden');$('generatorSection').classList.add('hidden'); }
+auth.onAuthStateChanged(async u=>{if(!u){showLogin();return}try{const d=await request('/premium-generator/status');if(d.authorized)showGenerator(u.email);else{await auth.signOut();showLogin()}}catch(e){status($('loginStatus'),e.message,'error');try{await auth.signOut()}catch(_){}}});
+$('loginBtn').onclick=async()=>{const email=$('email').value.trim(),password=$('password').value;if(!email||!password){status($('loginStatus'),'Enter your email and password.','error');return}$('loginBtn').disabled=true;status($('loginStatus'),'Signing in…');try{const c=await auth.signInWithEmailAndPassword(email,password);if(String(c.user?.email||'').toLowerCase()!=='prathameshsinghsingh5@gmail.com'){await auth.signOut();throw new Error('This account is not authorized to generate Premium codes.')}status($('loginStatus'),'Authorized.','success')}catch(e){status($('loginStatus'),e.message||'Sign-in failed.','error')}finally{$('loginBtn').disabled=false}};
+$('logoutBtn').onclick=()=>auth.signOut();
+$('generateBtn').onclick=async()=>{const value=Number($('duration').value),unit=$('unit').value,expiry=$('expiry').value;if(!Number.isFinite(value)||value<=0){status($('generatorStatus'),'Enter a valid Premium duration.','error');return}if(!expiry){status($('generatorStatus'),'Choose a future expiry date and time.','error');return}const expiryDate=new Date(expiry);if(!Number.isFinite(expiryDate.getTime())||expiryDate.getTime()<=Date.now()){status($('generatorStatus'),'Expiry must be in the future.','error');return}$('generateBtn').disabled=true;status($('generatorStatus'),'Generating…');$('result').style.display='none';try{const d=await request('/premium-generator/create','POST',{durationValue:value,durationUnit:unit,expiresAt:expiryDate.toISOString()});$('codeOutput').textContent=d.code;$('details').textContent=`Premium duration: ${d.durationLabel} · Code expires: ${new Date(d.expiresAt).toLocaleString()}`;$('result').style.display='block';status($('generatorStatus'),'Redeem code created successfully.','success')}catch(e){status($('generatorStatus'),e.message||'Failed to generate redeem code.','error')}finally{$('generateBtn').disabled=false}};
+$('copyBtn').onclick=async()=>{const code=$('codeOutput').textContent;if(!code)return;try{await navigator.clipboard.writeText(code);status($('generatorStatus'),'Code copied.','success')}catch(_){status($('generatorStatus'),'Copy failed. Select and copy the code manually.','error')}};
+const d=new Date(Date.now()+30*86400000);d.setSeconds(0,0);const pad=n=>String(n).padStart(2,'0');$('expiry').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+})();
+</script>
+</body>
+</html>
